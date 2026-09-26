@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Inventory</p>
+      <h2>Products</h2>
+    </div>
+  </div>
+
+  <div class="grid-two">
+    <div class="card-panel">
+      <div class="card-header">
+        <h3>Create product</h3>
+      </div>
+
+      <form method="POST" class="stack-form">
+        <div class="input-grid">
+          <label>
+            Product name
+            <input type="text" name="name" required />
+          </label>
+          <label>
+            SKU / Code
+            <input type="text" name="sku" required />
+          </label>
+        </div>
+
+        <div class="input-grid">
+          <label>
+            Category
+            <input type="text" name="category" required />
+          </label>
+          <label>
+            Unit of measure
+            <input type="text" name="unit_of_measure" required />
+          </label>
+        </div>
+
+        <div class="input-grid">
+          <label>
+            Location
+            <input type="text" name="location" value="Main Warehouse" />
+          </label>
+          <label>
+            Initial stock
+            <input type="number" name="initial_stock" value="0" />
+          </label>
+        </div>
+
+        <button type="submit" class="primary-btn">Save product</button>
+      </form>
+    </div>
+
+    <div class="card-panel">
+      <div class="card-header">
+        <h3>Upload CSV</h3>
+      </div>
+
+      <form method="POST" action="{{ url_for('main.upload_products_csv') }}" enctype="multipart/form-data" class="stack-form">
+        <label>
+          Upload inventory file
+          <input type="file" name="file" accept=".csv" required />
+        </label>
+
+        <div class="csv-template-box">
+          <strong>CSV format:</strong>
+          <p>name,sku,category,unit_of_measure,location,initial_stock,reorder_level</p>
+        </div>
+
+        <button type="submit" class="secondary-btn">Import CSV</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="card-panel mt-24">
+    <div class="card-header">
+      <h3>Quick stats</h3>
+    </div>
+    <div class="mini-stats">
+      <div>
+        <strong>{{ products|length }}</strong>
+        <span>Active products</span>
+      </div>
+      <div>
+        <strong>{{ products|sum(attribute='stock_quantity') }}</strong>
+        <span>Total units</span>
+      </div>
+      <div>
+        <strong>{{ products|selectattr('stock_quantity', '<=', 10)|list|length }}</strong>
+        <span>At risk</span>
+      </div>
+    </div>
+  </div>
+
+  <section class="table-card">
+    <div class="card-header">
+      <h3>Product catalog</h3>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>SKU</th>
+          <th>Category</th>
+          <th>Location</th>
+          <th>Stock</th>
+          <th>UOM</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for product in products %}
+          <tr>
+            <td>{{ product.name }}</td>
+            <td>{{ product.sku }}</td>
+            <td>{{ product.category }}</td>
+            <td>{{ product.location }}</td>
+            <td>{{ product.stock_quantity }}</td>
+            <td>{{ product.unit_of_measure }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+{% endblock %}

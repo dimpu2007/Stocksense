@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Account</p>
+      <h2>My profile</h2>
+    </div>
+  </div>
+
+  <div class="grid-two">
+    <div class="card-panel">
+      <div class="card-header">
+        <h3>Profile details</h3>
+      </div>
+      <div class="profile-summary">
+        <div class="profile-badge large">{{ user.username[0].upper() }}</div>
+        <div>
+          <strong>{{ user.username }}</strong>
+          <p>{{ user.email }}</p>
+        </div>
+      </div>
+      <div class="meta-list">
+        <span>Role: Warehouse Admin</span>
+        <span>Location: Head Office</span>
+        <span>Joined: {{ user.created_at.strftime('%Y-%m-%d') }}</span>
+      </div>
+    </div>
+
+    <div class="card-panel">
+      <div class="card-header">
+        <h3>Activity</h3>
+      </div>
+      <ul class="list-stack">
+        <li>4 product updates this week</li>
+        <li>2 transfer schedules pending</li>
+        <li>1 stock correction applied</li>
+      </ul>
+    </div>
+  </div>
+{% endblock %}

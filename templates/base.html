@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}StocVue{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  </head>
+  <body>
+    {% if session.get('user_id') %}
+      <div class="app-shell">
+        <aside class="sidebar">
+          <div class="brand-wrap">
+            <div class="brand-mark">S</div>
+            <div>
+              <h1>StocVue</h1>
+              <p>Inventory control</p>
+            </div>
+          </div>
+
+          <nav class="sidebar-nav">
+            <a href="{{ url_for('main.dashboard') }}" class="nav-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}">Dashboard</a>
+            <a href="{{ url_for('main.products') }}" class="nav-link {% if request.endpoint == 'main.products' %}active{% endif %}">Products</a>
+            <a href="{{ url_for('main.operations') }}" class="nav-link {% if request.endpoint == 'main.operations' %}active{% endif %}">Operations</a>
+            <a href="{{ url_for('main.settings') }}" class="nav-link {% if request.endpoint == 'main.settings' %}active{% endif %}">Settings</a>
+            <a href="{{ url_for('main.profile') }}" class="nav-link {% if request.endpoint == 'main.profile' %}active{% endif %}">Profile</a>
+          </nav>
+
+          <div class="profile-box">
+            <div class="profile-badge">{{ session.get('username', 'User')[0].upper() }}</div>
+            <div>
+              <strong>{{ session.get('username', 'User') }}</strong>
+              <small>Warehouse Admin</small>
+            </div>
+          </div>
+
+          <a href="{{ url_for('auth.logout') }}" class="logout-btn">Logout</a>
+        </aside>
+
+        <main class="main-panel">
+          {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+              <div class="flash-stack">
+                {% for category, message in messages %}
+                  <div class="flash flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+              </div>
+            {% endif %}
+          {% endwith %}
+
+          {% block content %}{% endblock %}
+        </main>
+      </div>
+    {% else %}
+      {% block auth_content %}{% endblock %}
+    {% endif %}
+  </body>
+</html>

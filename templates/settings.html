@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Configuration</p>
+      <h2>Warehouse settings</h2>
+    </div>
+  </div>
+
+  <div class="settings-grid">
+    <div class="card-panel">
+      <div class="card-header"><h3>Locations</h3></div>
+      <ul class="list-stack">
+        {% for warehouse in warehouses %}
+          <li>{{ warehouse }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <div class="card-panel">
+      <div class="card-header"><h3>Policies</h3></div>
+      <ul class="list-stack">
+        <li>Low-stock threshold: 10 units</li>
+        <li>Daily receiving review: enabled</li>
+        <li>Auto-approval for transfer: disabled</li>
+        <li>Cycle count: every 7 days</li>
+      </ul>
+    </div>
+  </div>
+{% endblock %}

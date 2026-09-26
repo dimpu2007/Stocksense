@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Operations Center</p>
+      <h2>Inventory flow</h2>
+    </div>
+  </div>
+
+  <div class="operations-grid">
+    <div class="card-panel">
+      <div class="card-header"><h3>Receive stock</h3></div>
+      <form method="POST" class="stack-form">
+        <input type="hidden" name="operation" value="receipt" />
+        <label>
+          Product
+          <select name="product_id" required>
+            {% for product in products %}
+              <option value="{{ product.id }}">{{ product.name }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>
+          Supplier
+          <input type="text" name="supplier" value="Vendor" required />
+        </label>
+        <label>
+          Quantity
+          <input type="number" name="quantity" min="1" value="10" required />
+        </label>
+        <button type="submit" class="primary-btn">Create receipt</button>
+      </form>
+    </div>
+
+    <div class="card-panel">
+      <div class="card-header"><h3>Delivery order</h3></div>
+      <form method="POST" class="stack-form">
+        <input type="hidden" name="operation" value="delivery" />
+        <label>
+          Product
+          <select name="product_id" required>
+            {% for product in products %}
+              <option value="{{ product.id }}">{{ product.name }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>
+          Customer
+          <input type="text" name="customer" value="Customer" required />
+        </label>
+        <label>
+          Quantity
+          <input type="number" name="quantity" min="1" value="5" required />
+        </label>
+        <button type="submit" class="primary-btn">Create delivery</button>
+      </form>
+    </div>
+
+    <div class="card-panel">
+      <div class="card-header"><h3>Internal transfer</h3></div>
+      <form method="POST" class="stack-form">
+        <input type="hidden" name="operation" value="transfer" />
+        <label>
+          Product
+          <select name="product_id" required>
+            {% for product in products %}
+              <option value="{{ product.id }}">{{ product.name }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>
+          From location
+          <input type="text" name="from_location" value="Main Warehouse" required />
+        </label>
+        <label>
+          To location
+          <input type="text" name="to_location" value="Production Floor" required />
+        </label>
+        <label>
+          Quantity
+          <input type="number" name="quantity" min="1" value="6" required />
+        </label>
+        <button type="submit" class="primary-btn">Schedule transfer</button>
+      </form>
+    </div>
+
+    <div class="card-panel">
+      <div class="card-header"><h3>Adjustment</h3></div>
+      <form method="POST" class="stack-form">
+        <input type="hidden" name="operation" value="adjustment" />
+        <label>
+          Product
+          <select name="product_id" required>
+            {% for product in products %}
+              <option value="{{ product.id }}">{{ product.name }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>
+          Location
+          <input type="text" name="location" value="Main Warehouse" required />
+        </label>
+        <label>
+          Quantity delta
+          <input type="number" name="quantity_delta" value="1" required />
+        </label>
+        <label>
+          Reason
+          <input type="text" name="reason" value="Cycle count correction" required />
+        </label>
+        <button type="submit" class="primary-btn">Apply adjustment</button>
+      </form>
+    </div>
+  </div>
+
+  <section class="table-card mt-24">
+    <div class="card-header"><h3>Recent operations</h3></div>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Product</th>
+          <th>Qty</th>
+          <th>Status</th>
+          <th>Created</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for receipt in receipts[:4] %}
+          <tr><td>Receipt</td><td>{{ receipt.product.name }}</td><td>{{ receipt.quantity }}</td><td>{{ receipt.status }}</td><td>{{ receipt.created_at.strftime('%Y-%m-%d') }}</td></tr>
+        {% endfor %}
+        {% for delivery in deliveries[:2] %}
+          <tr><td>Delivery</td><td>{{ delivery.product.name }}</td><td>{{ delivery.quantity }}</td><td>{{ delivery.status }}</td><td>{{ delivery.created_at.strftime('%Y-%m-%d') }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+{% endblock %}

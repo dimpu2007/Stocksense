@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="StocVue logo">
+  <defs>
+    <linearGradient id="bg" x1="0%" x2="100%" y1="0%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#091827"/>
+    </linearGradient>
+    <linearGradient id="line" x1="0%" x2="100%" y1="0%" y2="0%">
+      <stop offset="0%" stop-color="#8ED6FB"/>
+      <stop offset="100%" stop-color="#3B82F6"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="32" fill="url(#bg)"/>
+  <path d="M18 90 L42 64 L58 78 L82 38 L108 54" fill="none" stroke="url(#line)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="108" cy="54" r="9" fill="#3B82F6"/>
+  <circle cx="58" cy="78" r="8" fill="#D4A843"/>
+  <circle cx="18" cy="90" r="8" fill="#8ED6FB"/>
+</svg>

@@ -1,0 +1,252 @@
+{% extends 'base.html' %}
+
+{% block auth_content %}
+  <div class="auth-page">
+    <div class="auth-card">
+      <div class="auth-header">
+        <img src="{{ url_for('static', filename='images/logo.jpeg') }}" alt="StocVue logo" class="brand-logo" />
+        <h2>Welcome back</h2>
+        <p>Sign in to your StocVue workspace.</p>
+      </div>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-stack auth-flash">
+            {% for category, message in messages %}
+              <div class="flash flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <form method="POST" action="{{ url_for('auth.login') }}" class="auth-form">
+        <label>
+          Login ID or Email
+          <input type="text" name="login_input" placeholder="admin or admin@stocvue.com" required />
+        </label>
+
+        <label>
+          Password
+          <input type="password" name="password" placeholder="Enter your password" required />
+        </label>
+
+        <button type="submit" class="primary-btn">Login</button>
+      </form>
+
+      <div class="auth-links">
+        <a href="{{ url_for('auth.register') }}">Create account</a>
+        <a href="{{ url_for('auth.reset_password') }}">Reset password</a>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+  const healthy=products.length-lowStockCount()-outStockCount();
+  const cGauge=document.getElementById('chartGauge');
+  if(cGauge) chartInstances.push(new Chart(cGauge,{type:'doughnut',data:{labels:['Healthy','Low','Out'],datasets:[{data:[Math.max(healthy,0),lowStockCount(),outStockCount()],backgroundColor:['#4ade80','#f5a623','#e5484d'],borderWidth:0}]},options:{rotation:-90,circumference:180,cutout:'72%',plugins:{legend:{display:false}}}}));
+  const catTotals=categories.map(c=>products.filter(p=>p.category===c).reduce((s,p)=>s+totalStock(p),0));
+  const cCat=document.getElementById('chartCat');
+  if(cCat) chartInstances.push(new Chart(cCat,{type:'doughnut',data:{labels:categories,datasets:[{data:catTotals,backgroundColor:CHART_COLORS,borderWidth:0}]},options:{plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:10}}}}}}));
+  const top=[...products].sort((a,b)=>totalStock(b)-totalStock(a)).slice(0,6);
+  const cTop=document.getElementById('chartTop');
+  if(cTop) chartInstances.push(new Chart(cTop,{type:'bar',data:{labels:top.map(p=>p.name),datasets:[{label:'Total Stock',data:top.map(totalStock),backgroundColor:'#d4a843',borderRadius:6}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:'#1C2842'}},y:{grid:{display:false}}}}}));
+}
+
+/* ============ NAVIGATION / RENDER ============ */
+let currentPage="dashboard";
+function goTo(page){
+  currentPage=page;
+  document.querySelectorAll('.navitem').forEach(n=>n.classList.toggle('active',n.dataset.page===page));
+  render();
+}
+function render(){
+  const m=document.getElementById('main');
+  if(currentPage==="dashboard"){ m.innerHTML=renderDashboard(); setTimeout(drawDashboardCharts,0); }
+  else if(currentPage==="products") m.innerHTML=renderProducts();
+  else if(currentPage==="receipts") m.innerHTML=renderOpsPage("Receipt","Receipts (Incoming Stock)");
+  else if(currentPage==="deliveries") m.innerHTML=renderOpsPage("Delivery","Delivery Orders (Outgoing Stock)");
+  else if(currentPage==="transfers") m.innerHTML=renderOpsPage("Internal","Internal Transfers");
+  else if(currentPage==="adjustments") m.innerHTML=renderOpsPage("Adjustment","Stock Adjustments");
+  else if(currentPage==="history") m.innerHTML=renderHistory();
+  else if(currentPage==="settings") m.innerHTML=renderSettings();
+  else if(currentPage==="profile") m.innerHTML=renderProfile();
+}
+function badge(s){return <span class="badge b-${s.toLowerCase()}">${s}</span>;}
+function nextLabel(status){const i=STATUS_ORDER.indexOf(status); return i<0||i>=3?null:"Mark "+STATUS_ORDER[i+1];}
+
+function renderDashboard(){
+  const pending=t=>ops.filter(o=>o.type===t&&o.status!=="Done"&&o.status!=="Canceled").length;
+  const lowItems=products.filter(isLow), outItems=products.filter(isOut);
+  let alert='';
+  if(lowItems.length||outItems.length){
+    alert=<div class="alertbar">⚠️ ${outItems.length} item(s) out of stock, ${lowItems.length} item(s) at or below reorder point: ${[...outItems,...lowItems].map(p=>p.name).join(', ')}</div>;
+  }
+  const healthPct = products.length ? Math.round(((products.length-lowStockCount()-outStockCount())/products.length)*100) : 100;
+  return `
+  <div class="topbar"><h2>Dashboard</h2></div>
+  ${alert}
+  <div class="kpis">
+    <div class="kpi"><div class="num">${products.length}</div><div class="lbl">Total Products in Stock</div></div>
+    <div class="kpi ${lowStockCount()+outStockCount()>0?'warn':''}"><div class="num">${lowStockCount()+outStockCount()}</div><div class="lbl">Low / Out of Stock Items</div></div>
+    <div class="kpi"><div class="num">${pending("Receipt")}</div><div class="lbl">Pending Receipts</div></div>
+    <div class="kpi"><div class="num">${pending("Delivery")}</div><div class="lbl">Pending Deliveries</div></div>
+    <div class="kpi"><div class="num">${pending("Internal")}</div><div class="lbl">Internal Transfers Scheduled</div></div>
+  </div>
+  <div class="chartsgrid">
+    <div class="chartcard"><h4>Stock Movement Trend (Ledger)</h4><canvas id="chartTrend"></canvas></div>
+    <div class="chartcard"><h4>Stock by Warehouse</h4><canvas id="chartWh"></canvas></div>
+    <div class="chartcard gaugewrap"><h4 style="align-self:flex-start">Inventory Health</h4><canvas id="chartGauge" width="220" height="140"></canvas><div class="gaugeval">${healthPct}%</div><div class="gaugelbl">of products at healthy stock</div></div>
+  </div>
+  <div class="chartsgrid" style="grid-template-columns:1fr 1fr">
+    <div class="chartcard"><h4>Stock Split by Category</h4><canvas id="chartCat"></canvas></div>
+    <div class="chartcard"><h4>Top Products by Total Stock</h4><canvas id="chartTop"></canvas></div>
+  </div>
+  <div class="panel">
+    <h3>All Operations</h3>
+    <div class="filters">
+      <select onchange="applyFilters()" id="f_type"><option value="">Doc Type: All</option><option>Receipt</option><option>Delivery</option><option>Internal</option><option>Adjustment</option></select>
+      <select onchange="applyFilters()" id="f_status"><option value="">Status: All</option>${STATUS_ORDER.concat("Canceled").map(s=><option>${s}</option>).join('')}</select>
+      <select onchange="applyFilters()" id="f_wh"><option value="">Warehouse: All</option>${warehouses.map(w=><option>${w}</option>).join('')}</select>
+      <select onchange="applyFilters()" id="f_cat"><option value="">Category: All</option>${categories.map(c=><option>${c}</option>).join('')}</select>
+    </div>
+    <div id="opsTableWrap">${opsTable(ops)}</div>
+  </div>`;
+}
+function opWh(o){return o.to||o.from||o.warehouse||'-';}
+function opsTable(list){
+  if(!list.length) return <div class="emptytxt">No operations yet.</div>;
+  return `<table><thead><tr><th>ID</th><th>Type</th><th>Product</th><th>Qty</th><th>Warehouse</th><th>Status</th><th>Date</th><th></th></tr></thead><tbody>
+  ${list.map(o=>{const p=findProduct(o.productId); const nl=nextLabel(o.status);return `<tr>
+    <td>#${o.id}</td><td>${o.type}</td><td>${p?p.name:'(deleted)'}</td><td>${o.qty}</td><td>${opWh(o)}</td><td>${badge(o.status)}</td><td>${o.date}</td>
+    <td>${nl?<button class="small" onclick="advanceOp(${o.id})">${nl}</button>:''}${o.status!=="Done"&&o.status!=="Canceled"?<button class="small danger" onclick="cancelOp(${o.id})">Cancel</button>:''}</td>
+  </tr>;}).join('')}</tbody></table>;
+}
+function applyFilters(){
+  const t=f_type.value,s=f_status.value,w=f_wh.value,c=f_cat.value;
+  const filtered=ops.filter(o=>{
+    const p=findProduct(o.productId);
+    return (!t||o.type===t)&&(!s||o.status===s)&&(!w||opWh(o)===w)&&(!c||(p&&p.category===c));
+  });
+  document.getElementById('opsTableWrap').innerHTML=opsTable(filtered);
+}
+
+function renderProducts(){
+  return `
+  <div class="topbar"><h2>Products</h2><input id="p_search" placeholder="Search by name or SKU..." style="max-width:240px;margin:0" oninput="filterProducts()"></div>
+  <div class="panel">
+    <h3>Add Product</h3>
+    <div class="formgrid">
+      <div><label>Name</label><input id="p_name"></div>
+      <div><label>SKU / Code</label><input id="p_sku"></div>
+      <div><label>Category</label><select id="p_cat">${categories.map(c=><option>${c}</option>).join('')}</select></div>
+      <div><label>Unit of Measure</label><input id="p_uom" placeholder="pcs, kg..." value="pcs"></div>
+      <div><label>Initial Stock</label><input id="p_stock" type="number" value="0"></div>
+      <div><label>Warehouse</label><select id="p_wh">${warehouses.map(w=><option>${w}</option>).join('')}</select></div>
+      <div><label>Reorder Point</label><input id="p_reorder" type="number" value="10"></div>
+    </div>
+    <button onclick="addProduct()">+ Create Product</button>
+  </div>
+  <div class="panel">
+    <h3>All Products</h3>
+    <div id="productsTableWrap">${productsTable(products)}</div>
+  </div>`;
+}
+function productsTable(list){
+  if(!list.length) return <div class="emptytxt">No products found.</div>;
+  return `<table><thead><tr><th>Name</th><th>SKU</th><th>Category</th><th>UOM</th><th>Stock by Warehouse</th><th>Total</th><th>Status</th><th></th></tr></thead><tbody>
+  ${list.map(p=>`<tr><td>${p.name}</td><td>${p.sku}</td><td>${p.category}</td><td>${p.uom}</td>
+    <td>${Object.entries(p.stockByWh).map(([w,q])=><span class="pill">${w}: ${q}</span>).join('')}</td>
+    <td><b>${totalStock(p)}</b></td>
+    <td>${isOut(p)?badge('Canceled'):isLow(p)?badge('Waiting'):badge('Done')}</td>
+    <td><button class="small danger" onclick="deleteProduct(${p.id})">Delete</button></td></tr>`).join('')}
+  </tbody></table>`;
+}
+function filterProducts(){
+  const q=p_search.value.toLowerCase();
+  const filtered=products.filter(p=>p.name.toLowerCase().includes(q)||p.sku.toLowerCase().includes(q));
+  document.getElementById('productsTableWrap').innerHTML=productsTable(filtered);
+}
+function addProduct(){
+  if(!p_name.value||!p_sku.value){alert("Name and SKU required");return;}
+  const stockByWh={}; warehouses.forEach(w=>stockByWh[w]=0);
+  stockByWh[p_wh.value]=Number(p_stock.value)||0;
+  products.push({id:seq++,name:p_name.value,sku:p_sku.value,category:p_cat.value,uom:p_uom.value||'pcs',stockByWh,reorderPoint:Number(p_reorder.value)||10});
+  saveState(); render();
+}
+
+function renderOpsPage(type,title){
+  const list=ops.filter(o=>o.type===type);
+  let extraFields='';
+  if(type==="Receipt") extraFields=`<div><label>Supplier</label><input id="op_supplier" placeholder="Supplier name"></div>
+    <div><label>Into Warehouse</label><select id="op_wh">${warehouses.map(w=><option>${w}</option>).join('')}</select></div>`;
+  if(type==="Delivery") extraFields=<div><label>From Warehouse</label><select id="op_wh">${warehouses.map(w=><option>${w}</option>).join('')}</select></div>;
+  if(type==="Adjustment") extraFields=<div><label>Warehouse</label><select id="op_wh">${warehouses.map(w=><option>${w}</option>).join('')}</select></div>;
+  if(type==="Internal") extraFields=<div><label>From</label><select id="op_from">${warehouses.map(w=><option>${w}</option>`).join('')}</select></div>
+    <div><label>To</label><select id="op_to">${warehouses.map(w=><option>${w}</option>).join('')}</select></div>`;
+  return `
+  <div class="topbar"><h2>${title}</h2></div>
+  <div class="panel">
+    <h3>New ${type}</h3>
+    <div class="formgrid">
+      <div><label>Product</label><select id="op_product">${products.map(p=><option value="${p.id}">${p.name} (${p.sku})</option>).join('')}</select></div>
+      <div><label>${type==="Adjustment"?"Counted Quantity":"Quantity"}</label><input id="op_qty" type="number" value="1"></div>
+      ${extraFields}
+    </div>
+    <button onclick="submitOp('${type}')">+ Create ${type}</button>
+  </div>
+  <div class="panel"><h3>${title} List</h3>${opsTable(list)}</div>
+  <div class="panel"><p style="color:#6a76a0;font-size:12px">Workflow: Draft → Waiting → Ready → Done. Stock updates automatically once a document reaches <b>Done</b>. Any stage before Done can be Canceled.</p></div>`;
+}
+function submitOp(type){
+  if(!products.length){alert("Create a product first");return;}
+  const data={productId:Number(op_product.value),qty:Number(op_qty.value)||0};
+  if(type==="Receipt"){data.supplier=op_supplier.value||"Unknown"; data.warehouse=op_wh.value;}
+  if(type==="Delivery"||type==="Adjustment"){data.warehouse=op_wh.value;}
+  if(type==="Internal"){data.from=op_from.value; data.to=op_to.value;}
+  createOp(type,data);
+}
+
+function renderHistory(){
+  return `
+  <div class="topbar"><h2>Move History (Stock Ledger)</h2></div>
+  <div class="panel">
+  ${ledger.length? `<table><thead><tr><th>Date</th><th>Type</th><th>Product</th><th>Qty Change</th><th>Detail</th></tr></thead><tbody>
+    ${ledger.map(l=><tr><td>${l.date}</td><td>${l.type}</td><td>${l.product}</td><td>${l.qty}</td><td>${l.detail}</td></tr>).join('')}
+  </tbody></table>` : <div class="emptytxt">No stock movements logged yet.</div>}
+  </div>`;
+}
+
+function renderSettings(){
+  return `
+  <div class="topbar"><h2>Settings</h2></div>
+  <div class="panel">
+    <h3>Warehouses</h3>
+    <div class="formgrid"><div><label>New Warehouse Name</label><input id="wh_name"></div></div>
+    <button onclick="addWarehouse()">+ Add Warehouse</button>
+    <table style="margin-top:14px"><thead><tr><th>Warehouse</th></tr></thead><tbody>
+    ${warehouses.map(w=><tr><td>${w}</td></tr>).join('')}
+    </tbody></table>
+  </div>
+  <div class="panel">
+    <h3>Categories</h3>
+    <div class="formgrid"><div><label>New Category Name</label><input id="cat_name"></div></div>
+    <button onclick="addCategory()">+ Add Category</button>
+    <table style="margin-top:14px"><thead><tr><th>Category</th></tr></thead><tbody>
+    ${categories.map(c=><tr><td>${c}</td></tr>).join('')}
+    </tbody></table>
+  </div>`;
+}
+function addWarehouse(){if(!wh_name.value)return; warehouses.push(wh_name.value); products.forEach(p=>ensureWh(p,wh_name.value)); saveState(); render();}
+function addCategory(){if(!cat_name.value)return; categories.push(cat_name.value); saveState(); render();}
+
+function renderProfile(){
+  return `
+  <div class="topbar"><h2>My Profile</h2></div>
+  <div class="panel">
+    <p style="color:#aab4d4;line-height:1.7">Login ID: <b>demo_user</b><br>Role: Inventory Manager<br>Warehouse access: All (${warehouses.length})</p>
+    <button class="secondary" style="margin-top:14px" onclick="logout()">Logout</button>
+  </div>`;
+}
+</script>
+</body>
+</html>

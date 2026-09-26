@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Inventory Overview</p>
+      <h2>Operations dashboard</h2>
+    </div>
+    <div class="header-actions">
+      <button class="secondary-btn">Export</button>
+      <button class="primary-btn">New report</button>
+    </div>
+  </div>
+
+  <form method="GET" class="filter-panel">
+    <div class="filter-group">
+      <label>Document Type</label>
+      <select name="document_type">
+        <option value="all" {% if current_filters.document_type == 'all' %}selected{% endif %}>All</option>
+        <option value="receipt" {% if current_filters.document_type == 'receipt' %}selected{% endif %}>Receipts</option>
+        <option value="delivery" {% if current_filters.document_type == 'delivery' %}selected{% endif %}>Delivery</option>
+        <option value="transfer" {% if current_filters.document_type == 'transfer' %}selected{% endif %}>Internal</option>
+        <option value="adjustment" {% if current_filters.document_type == 'adjustment' %}selected{% endif %}>Adjustments</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label>Status</label>
+      <select name="status">
+        <option value="all" {% if current_filters.status == 'all' %}selected{% endif %}>All</option>
+        <option value="draft" {% if current_filters.status == 'draft' %}selected{% endif %}>Draft</option>
+        <option value="waiting" {% if current_filters.status == 'waiting' %}selected{% endif %}>Waiting</option>
+        <option value="ready" {% if current_filters.status == 'ready' %}selected{% endif %}>Ready</option>
+        <option value="done" {% if current_filters.status == 'done' %}selected{% endif %}>Done</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label>Warehouse</label>
+      <select name="warehouse">
+        <option value="all" {% if current_filters.warehouse == 'all' %}selected{% endif %}>All</option>
+        {% for warehouse in warehouses %}
+          <option value="{{ warehouse }}" {% if current_filters.warehouse == warehouse %}selected{% endif %}>{{ warehouse }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label>Category</label>
+      <select name="category">
+        <option value="all" {% if current_filters.category == 'all' %}selected{% endif %}>All</option>
+        {% for category in categories_list %}
+          <option value="{{ category }}" {% if current_filters.category == category %}selected{% endif %}>{{ category }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <button type="submit" class="primary-btn">Apply</button>
+  </form>
+
+  <section class="kpi-grid">
+    <div class="kpi-card accent-blue">
+      <span>Total Products</span>
+      <strong>{{ products|length }}</strong>
+      <small>{{ total_stock }} units in stock</small>
+    </div>
+    <div class="kpi-card accent-slate">
+      <span>Low Stock</span>
+      <strong>{{ low_stock }}</strong>
+      <small>{{ out_of_stock }} out of stock</small>
+    </div>
+    <div class="kpi-card accent-indigo">
+      <span>Pending Receipts</span>
+      <strong>{{ pending_receipts }}</strong>
+      <small>Awaiting validation</small>
+    </div>
+    <div class="kpi-card accent-cyan">
+      <span>Pending Deliveries</span>
+      <strong>{{ pending_deliveries }}</strong>
+      <small>Customer shipments</small>
+    </div>
+    <div class="kpi-card accent-amber">
+      <span>Internal Transfers</span>
+      <strong>{{ internal_transfers }}</strong>
+      <small>Scheduled movements</small>
+    </div>
+  </section>
+
+  <section class="chart-grid">
+    <div class="chart-card wide">
+      <div class="card-header">
+        <h3>Stock availability</h3>
+      </div>
+      <canvas id="stockChart"></canvas>
+    </div>
+
+    <div class="chart-card">
+      <div class="card-header">
+        <h3>Inventory mix</h3>
+      </div>
+      <canvas id="categoryChart"></canvas>
+    </div>
+  </section>
+
+  <section class="table-card">
+    <div class="card-header">
+      <h3>Recent stock ledger</h3>
+      <span>Live movement feed</span>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>Document</th>
+          <th>Qty</th>
+          <th>Location</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in ledger_entries %}
+          <tr>
+            <td>{{ entry.product.name }}</td>
+            <td>{{ entry.document_type }}</td>
+            <td>{{ entry.quantity_change }}</td>
+            <td>{{ entry.product.location }}</td>
+            <td>{{ entry.created_at.strftime('%Y-%m-%d') }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <script>
+    Chart.defaults.color = '#ffffff';
+    Chart.defaults.font.family = 'Inter, sans-serif';
+    Chart.defaults.font.size = 12;
+
+    const stockCtx = document.getElementById('stockChart');
+    new Chart(stockCtx, {
+      type: 'bar',
+      data: {
+        labels: {{ chart_labels|tojson }},
+        datasets: [{
+          label: 'Units in stock',
+          data: {{ chart_values|tojson }},
+          backgroundColor: '#7cc0ff',
+          borderRadius: 8
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            labels: {
+              color: '#ffffff'
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: '#ffffff' },
+            grid: { color: 'rgba(255,255,255,0.08)' }
+          },
+          y: {
+            beginAtZero: true,
+            ticks: { color: '#ffffff' },
+            grid: { color: 'rgba(255,255,255,0.08)' }
+          }
+        }
+      }
+    });
+
+    const categoryCtx = document.getElementById('categoryChart');
+    new Chart(categoryCtx, {
+      type: 'doughnut',
+      data: {
+        labels: {{ categories.keys()|list|tojson }},
+        datasets: [{
+          data: {{ categories.values()|list|tojson }},
+          backgroundColor: ['#7cc0ff', '#9fd4ff', '#4f7df0', '#d9ecff', '#2a3550']
+        }]
+      },
+      options: {
+        responsive: true,
+        cutout: '65%',
+        plugins: {
+          legend: {
+            labels: {
+              color: '#ffffff',
+              usePointStyle: true,
+              pointStyle: 'circle'
+            }
+          }
+        }
+      }
+    });
+  </script>
+{% endblock %}
