@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>StocVue - Inventory Management</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
+:root{color-scheme:dark}
+body{background:#05070C;color:#e8ecfa;min-height:100%}
+html,body{height:100%}
+.hidden{display:none!important}
+#authScreen{min-height:100vh;display:flex;justify-content:center;align-items:center;padding:20px;position:relative;overflow:hidden}
+.g1,.g2{position:absolute;border-radius:50%;filter:blur(110px);opacity:.22;pointer-events:none}
+.g1{width:600px;height:600px;background:#3B82F6;top:-200px;left:-150px}
+.g2{width:500px;height:500px;background:#8ED6FB;bottom:-150px;right:-100px}
+.card{position:relative;z-index:2;width:420px;padding:30px 35px;background:linear-gradient(180deg,#101727,#0C1120);border-radius:20px;border:1px solid #1C2842;text-align:center}
+.logo-wrap{width:130px;height:130px;margin:0 auto 14px;border-radius:50%;overflow:hidden;border:3px solid #d4a843;box-shadow:0 0 30px rgba(212,168,67,.6);background:#000}
+.logo-wrap img{width:100%;height:100%;object-fit:cover}
+h1{color:#9bbcff;margin-bottom:4px}
+.subtitle{color:#aaa;margin-bottom:20px;font-size:13px}
+label{display:block;text-align:left;color:#cbd5ff;font-size:12px;margin-bottom:5px}
+input,select{width:100%;padding:10px;margin-bottom:12px;border-radius:8px;border:1.5px solid #252c47;background:#070A14;color:white;outline:none;font-size:13px}
+input:focus,select:focus{border-color:#8ED6FB}
+button{padding:10px 16px;border-radius:8px;border:none;background:linear-gradient(135deg,#8ED6FB,#3B82F6);color:#031024;font-weight:800;cursor:pointer;font-size:13px}
+button.secondary{background:#1C2842;color:#cbd5ff}
+button.small{padding:6px 10px;font-size:11px;margin-right:4px;margin-top:4px}
+button.danger{background:#e5484d;color:#fff}
+button.ghost{background:transparent;border:1px solid #2a3454;color:#aab4d4}
+.full{width:100%;margin-bottom:10px}
+.switch{color:#aaa;font-size:13px;margin-top:14px}
+.switch span{color:#8ED6FB;cursor:pointer;font-weight:700}
+#otpSection{display:none}
+#appScreen{display:flex;min-height:100vh}
+#sidebar{width:230px;background:#0A0E1A;border-right:1px solid #1C2842;padding:16px 0;flex-shrink:0}
+#sidebar .brand{display:flex;align-items:center;gap:10px;padding:0 20px 16px;border-bottom:1px solid #1C2842;margin-bottom:10px}
+#sidebar .brand img{width:38px;height:38px;border-radius:50%;border:2px solid #d4a843;object-fit:cover}
+#sidebar .brand span{color:#9bbcff;font-weight:800;font-size:18px}
+.navitem{display:flex;align-items:center;gap:10px;padding:10px 20px;color:#aab4d4;cursor:pointer;font-size:13.5px;border-left:3px solid transparent}
+.navitem:hover{background:#111a30}
+.navitem.active{background:#111a30;border-left-color:#3B82F6;color:#fff}
+.navsection{padding:12px 20px 4px;font-size:10.5px;color:#5a6690;text-transform:uppercase;letter-spacing:.5px}
+#main{flex:1;padding:24px 30px;overflow-x:auto;max-width:100%;
+  background:
+    radial-gradient(circle at 15% 0%, rgba(59,130,246,.16), transparent 45%),
+    radial-gradient(circle at 90% 15%, rgba(142,214,251,.12), transparent 40%),
+    radial-gradient(circle at 50% 100%, rgba(212,168,67,.08), transparent 45%),
+    linear-gradient(180deg,#070A14 0%,#05070C 100%);
+  background-attachment:fixed;
+}
+.chartsgrid{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:14px;margin-bottom:18px}
+@media(max-width:900px){.chartsgrid{grid-template-columns:1fr}}
+.chartcard{background:linear-gradient(180deg,#101a30,#0B111F);border:1px solid #1C2842;border-radius:14px;padding:16px;position:relative}
+.chartcard h4{color:#cbd5ff;font-size:13px;margin-bottom:10px}
+.chartcard canvas{max-height:190px}
+.gaugewrap{display:flex;flex-direction:column;align-items:center;justify-content:center}
+.gaugewrap .gaugeval{font-size:26px;font-weight:800;margin-top:-58px;color:#8ED6FB}
+.gaugewrap .gaugelbl{font-size:11px;color:#9aa5c9;margin-top:2px}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px}
+.topbar h2{color:#fff}
+.alertbar{background:#3a1f10;border:1px solid #5a3418;color:#f5a623;padding:10px 14px;border-radius:10px;margin-bottom:16px;font-size:13px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:22px}
+.kpi{background:#0C1224;border:1px solid #1C2842;border-radius:12px;padding:14px}
+.kpi .num{font-size:24px;font-weight:800;color:#8ED6FB}
+.kpi .lbl{font-size:11.5px;color:#9aa5c9;margin-top:4px}
+.kpi.warn .num{color:#f5a623}
+.kpi.bad .num{color:#e5484d}
+.panel{background:#0C1224;border:1px solid #1C2842;border-radius:14px;padding:18px;margin-bottom:18px}
+.panel h3{color:#cbd5ff;margin-bottom:12px;font-size:14.5px}
+.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.filters select,.filters input{width:auto;min-width:130px;margin-bottom:0}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{text-align:left;padding:8px 9px;border-bottom:1px solid #1C2842;white-space:nowrap}
+th{color:#8b96c2;font-weight:700;font-size:10.5px;text-transform:uppercase}
+tr:hover td{background:#101a30}
+.badge{padding:3px 9px;border-radius:20px;font-size:10.5px;font-weight:700}
+.b-draft{background:#2a2f45;color:#aab4d4}
+.b-waiting{background:#3a2f10;color:#f5a623}
+.b-ready{background:#10333a;color:#5fd0e0}
+.b-done{background:#0f3a1e;color:#4ade80}
+.b-canceled{background:#3a1010;color:#e5484d}
+.formgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:12px}
+.formgrid label{margin-bottom:4px}
+.emptytxt{color:#6a76a0;font-size:13px;padding:14px 0;text-align:center}
+.pill{display:inline-block;background:#151d33;border:1px solid #232c48;border-radius:8px;padding:2px 8px;font-size:11px;margin:2px}
+</style>
+</head>
+<body>
+
+<div id="authScreen">
+<div class="g1"></div><div class="g2"></div>
+<div class="card">
+  <div class="logo-wrap"><img id="logoImgLogin" src="" alt="StocVue"></div>
+  <h1>StocVue</h1>
+  <div id="loginBox">
+    <p class="subtitle">Login to your account</p>
+    <label>Login ID</label><input id="loginId" placeholder="Enter Login ID">
+    <label>Password</label><input id="loginPassword" type="password" placeholder="Enter Password">
+    <button class="full" onclick="login()">Login</button>
+    <p class="switch">New user? <span onclick="showSignup()">Sign Up</span></p>
+  </div>
+  <div id="signupBox" class="hidden">
+    <p class="subtitle">Create a new account</p>
+    <label>Login ID</label><input id="s_loginId" placeholder="Enter Login ID">
+    <label>Email</label><input id="s_email" placeholder="Enter Email">
+    <label>Password</label><input id="s_password" type="password" placeholder="Enter Password">
+    <label>Re-enter Password</label><input id="s_confirmPassword" type="password" placeholder="Re-enter Password">
+    <button class="full" id="sendOtpBtn" onclick="sendOTP()">Send OTP</button>
+    <div id="otpSection">
+      <label>Enter OTP</label><input id="otp" placeholder="Enter 6-digit OTP">
+      <button class="full" id="verifyBtn" onclick="verifyOTP()">Verify OTP</button>
+    </div>
+    <button class="full hidden" id="signupBtn" onclick="signup()">Sign Up</button>
+    <p class="switch">Already have an account? <span onclick="showLogin()">Login</span></p>
+  </div>
+</div>
+</div>
+
+<div id="appScreen" class="hidden">
+  <div id="sidebar">
+    <div class="brand"><img id="logoImgSide" src="" alt="logo"><span>StocVue</span></div>
+    <div class="navitem active" data-page="dashboard" onclick="goTo('dashboard')">📊 Dashboard</div>
+    <div class="navsection">Navigation</div>
+    <div class="navitem" data-page="products" onclick="goTo('products')">📦 Products</div>
+    <div class="navitem" data-page="receipts" onclick="goTo('receipts')">📥 Receipts</div>
+    <div class="navitem" data-page="deliveries" onclick="goTo('deliveries')">📤 Delivery Orders</div>
+    <div class="navitem" data-page="transfers" onclick="goTo('transfers')">🔁 Internal Transfers</div>
+    <div class="navitem" data-page="adjustments" onclick="goTo('adjustments')">🛠 Adjustments</div>
+    <div class="navitem" data-page="history" onclick="goTo('history')">📜 Move History</div>
+    <div class="navsection">System</div>
+    <div class="navitem" data-page="settings" onclick="goTo('settings')">⚙️ Settings</div>
+    <div class="navitem" data-page="profile" onclick="goTo('profile')">👤 My Profile</div>
+    <div class="navitem" onclick="logout()">🚪 Logout</div>
+    <div class="navsection">&nbsp;</div>
+    <div style="padding:0 20px"><button class="ghost full small" onclick="resetDemoData()">Reset Demo Data</button></div>
+  </div>
+  <div id="main"></div>
+</div>
+
+<script>
+/* ============ LOGO ============ */
+/* This is a small inline vector logo — no external file/network needed, so it always renders. */
+const LOGO_SRC = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='32' fill='%230C1120'/%3E%3Cpolyline points='4,44 20,28 30,38 44,18 60,26' fill='none' stroke='%238ED6FB' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='60' cy='26' r='5' fill='%233B82F6'/%3E%3Ccircle cx='30' cy='38' r='4' fill='%23d4a843'/%3E%3Ccircle cx='4' cy='44' r='4' fill='%238ED6FB'/%3E%3C/svg%3E";
+document.getElementById('logoImgLogin').src = LOGO_SRC;
+document.getElementById('logoImgSide').src = LOGO_SRC;
+
+/* ============ AUTH ============ */
+function showSignup(){loginBox.classList.add('hidden');signupBox.classList.remove('hidden');}
+function showLogin(){signupBox.classList.add('hidden');loginBox.classList.remove('hidden');}
+function login(){
+  if(!loginId.value||!loginPassword.value){alert("Please fill all fields");return;}
+  authScreen.classList.add('hidden'); appScreen.classList.remove('hidden'); goTo('dashboard');
+}
+let generatedOTP="",otpVerified=false;
+function sendOTP(){
+  if(!s_loginId.value||!s_email.value||!s_password.value||!s_confirmPassword.value){alert("Please fill all fields");return;}
+  if(s_password.value!==s_confirmPassword.value){alert("Passwords do not match");return;}
+  generatedOTP=Math.floor(100000+Math.random()*900000).toString();
+  alert("Your StocVue OTP is: "+generatedOTP);
+  otpSection.style.display="block"; sendOtpBtn.style.display="none";
+}
+function verifyOTP(){
+  if(otp.value===generatedOTP){alert("OTP verified!"); otpVerified=true; verifyBtn.style.display="none"; signupBtn.classList.remove('hidden');}
+  else alert("Incorrect OTP");
+}
+function signup(){if(!otpVerified){alert("Verify OTP first");return;} alert("Account created! Please login."); showLogin();}
+function logout(){appScreen.classList.add('hidden');authScreen.classList.remove('hidden');}
+
+/* ============ PERSISTENCE ============ */
+const STORE_KEY="stocvue_ims_state_v2";
+function saveState(){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify({seq,warehouses,categories,products,ops,ledger})); }
+  catch(e){console.warn("save failed",e);}
+}
+function loadState(){
+  try{
+    const raw=localStorage.getItem(STORE_KEY);
+    if(!raw) return false;
+    const s=JSON.parse(raw);
+    seq=s.seq; warehouses=s.warehouses; categories=s.categories; products=s.products; ops=s.ops; ledger=s.ledger;
+    return true;
+  }catch(e){console.warn("load failed",e); return false;}
+}
+function resetDemoData(){
+  if(!confirm("Reset all demo data back to defaults?"))return;
+  try{localStorage.removeItem(STORE_KEY);}catch(e){}
+  initDefaults(); render();
+}
+
+/* ============ DATA MODEL ============ */
+let seq, warehouses, categories, products, ops, ledger;
+function initDefaults(){
+  seq=1;
+  warehouses=["Main Warehouse","Warehouse 2","Production Floor"];
+  categories=["Raw Material","Finished Goods","Components"];
+  products=[
+    {id:seq++,name:"Steel Rods",sku:"STL-001",category:"Raw Material",uom:"kg",stockByWh:{"Main Warehouse":100,"Warehouse 2":0,"Production Floor":0},reorderPoint:20},
+    {id:seq++,name:"Wooden Chairs",sku:"CHR-010",category:"Finished Goods",uom:"pcs",stockByWh:{"Main Warehouse":8,"Warehouse 2":0,"Production Floor":0},reorderPoint:10},
+    {id:seq++,name:"Bolts M6",sku:"BLT-006",category:"Components",uom:"pcs",stockByWh:{"Main Warehouse":0,"Warehouse 2":0,"Production Floor":0},reorderPoint:50}
+  ];
+  ops=[]; ledger=[];
+}
+if(!loadState()) initDefaults();
+
+function findProduct(id){return products.find(p=>p.id==id);}
+function totalStock(p){return Object.values(p.stockByWh).reduce((a,b)=>a+b,0);}
+function isLow(p){const t=totalStock(p);return t>0 && t<=p.reorderPoint;}
+function isOut(p){return totalStock(p)===0;}
+function lowStockCount(){return products.filter(isLow).length;}
+function outStockCount(){return products.filter(isOut).length;}
+function ensureWh(p,wh){if(!(wh in p.stockByWh)) p.stockByWh[wh]=0;}
+function logMove(type,product,qty,detail){ledger.unshift({id:seq++,date:new Date().toLocaleString(),type,product,qty,detail});}
+
+const STATUS_ORDER=["Draft","Waiting","Ready","Done"];
+function createOp(type,data){
+  ops.unshift({id:seq++,type,status:"Draft",applied:false,date:new Date().toLocaleDateString(),...data});
+  saveState(); render();
+}
+function advanceOp(id){
+  const op=ops.find(o=>o.id==id); if(!op||op.status==="Done"||op.status==="Canceled")return;
+  const idx=STATUS_ORDER.indexOf(op.status);
+  op.status=STATUS_ORDER[idx+1];
+  if(op.status==="Done" && !op.applied){
+    const p=findProduct(op.productId);
+    if(p && type_effects[op.type]){ type_effects[op.type](op,p); op.applied=true; }
+  }
+  saveState(); render();
+}
+function cancelOp(id){const op=ops.find(o=>o.id==id); if(op&&op.status!=="Done"){op.status="Canceled"; saveState(); render();}}
+function deleteProduct(id){
+  if(!confirm("Delete this product?"))return;
+  products=products.filter(p=>p.id!=id); saveState(); render();
+}
+
+const type_effects={
+  "Receipt":(op,p)=>{ensureWh(p,op.warehouse); p.stockByWh[op.warehouse]+=op.qty; logMove("Receipt",p.name,"+"+op.qty,"From supplier "+op.supplier+" into "+op.warehouse);},
+  "Delivery":(op,p)=>{ensureWh(p,op.warehouse); p.stockByWh[op.warehouse]=Math.max(0,p.stockByWh[op.warehouse]-op.qty); logMove("Delivery",p.name,"-"+op.qty,"Shipped from "+op.warehouse);},
+  "Internal":(op,p)=>{ensureWh(p,op.from); ensureWh(p,op.to); const moved=Math.min(op.qty,p.stockByWh[op.from]); p.stockByWh[op.from]-=moved; p.stockByWh[op.to]+=moved; logMove("Internal",p.name,op.qty,op.from+" → "+op.to);},
+  "Adjustment":(op,p)=>{ensureWh(p,op.warehouse); const before=p.stockByWh[op.warehouse]; const diff=op.qty-before; p.stockByWh[op.warehouse]=op.qty; logMove("Adjustment",p.name,(diff>=0?"+":"")+diff,"Recount in "+op.warehouse+" ("+before+" → "+op.qty+")");}
+};
+
+/* ============ CHARTS ============ */
+let chartInstances=[];
+function destroyCharts(){chartInstances.forEach(c=>{try{c.destroy();}catch(e){}}); chartInstances=[];}
+const CHART_COLORS=["#3B82F6","#8ED6FB","#d4a843","#4ade80","#f5a623","#e5484d","#a78bfa","#5fd0e0"];
+function drawDashboardCharts(){
+  if(typeof Chart==="undefined")return;
+  destroyCharts();
+  Chart.defaults.color="#9aa5c9";
+  Chart.defaults.borderColor="#1C2842";
+  const hist=[...ledger].reverse();
+  let running=0;
+  const trendLabels=hist.map((l,i)=>"#"+(i+1));
+  const trendData=hist.map(l=>{running+=Number(l.qty)||0; return running;});
+  const cTrend=document.getElementById('chartTrend');
+  if(cTrend) chartInstances.push(new Chart(cTrend,{type:'line',data:{labels:trendLabels.length?trendLabels:['-'],datasets:[{label:'Net stock change',data:trendData.length?trendData:[0],borderColor:'#8ED6FB',backgroundColor:'rgba(142,214,251,.15)',fill:true,tension:.35,pointRadius:2}]},options:{plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:'#1C2842'}}}}}));
+  const whTotals=warehouses.map(w=>products.reduce((s,p)=>s+(p.stockByWh[w]||0),0));
+  const cWh=document.getElementById('chartWh');
+  if(cWh) chartInstances.push(new Chart(cWh,{type:'bar',data:{labels:warehouses,datasets:[{label:'Units',data:whTotals,backgroundColor:'#3B82F6',borderRadius:6}]},options:{plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:'#1C2842'}}}}}));
+  const healthy=products.length-lowStockCount()-outStockCount();
+  const cGauge=document.getElementById('chartGauge');
+  if(cGauge) chartInstances.push(new Chart(cGauge,{type:'doughnut',data:{labels:['Healthy','Low','Out'],datasets:[{data:[Math.max(healthy,0),lowStockCount(),outStockCount()],backgroundColor:['#4ade80','#f5a623','#e5484d'],borderWidth:0}]},options:{rotation:-90,circumference:180,cutout:'72%',plugins:{legend:{display:false}}}}));
+  const catTotals=categories.map(c=>products.filter(p=>p.category===c).reduce((s,p)=>s+totalStock(p),0));
+  const cCat=document.getElementById('chartCat');
+  if(cCat) chartInstances.push(new Chart(cCat,{type:'doughnut',data:{labels:categories,datasets:[{data:catTotals,backgroundColor:CHART_COLORS,borderWidth:0}]},options:{plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:10}}}}}}));
+  const top=[...products].sort((a,b)=>totalStock(b)-totalStock(a)).slice(0,6);
+  const cTop=document.getElementById('chartTop');
+  if(cTop) chartInstances.push(new Chart(cTop,{type:'bar',data:{labels:top.map(p=>p.name),datasets:[{label:'Total Stock',data:top.map(totalStock),backgroundColor:'#d4a843',borderRadius:6}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:'#1C2842'}},y:{grid:{display:false}}}}}));
+}
+
+/* ============ NAVIGATION / RENDER ============ */
+let currentPage="dashboard";
+function goTo(page){
+  currentPage=page;
+  document.querySelectorAll('.navitem').forEach(n=>n.classList.toggle('active',n.dataset.page===page));
+  render();
+}
+function render(){
+  const m=document.getElementById('main');
+  if(currentPage==="dashboard"){ m.innerHTML=renderDashboard(); setTimeout(drawDashboardCharts,0); }
+  else if(currentPage==="products") m.innerHTML=renderProducts();
+  else if(currentPage==="receipts") m.innerHTML=renderOpsPage("Receipt","Receipts (Incoming Stock)");
+  else if(currentPage==="deliveries") m.innerHTML=renderOpsPage("Delivery","Delivery Orders (Outgoing Stock)");
+  else if(currentPage==="transfers") m.innerHTML=renderOpsPage("Internal","Internal Transfers");
+  else if(currentPage==="adjustments") m.innerHTML=renderOpsPage("Adjustment","Stock Adjustments");
+  else if(currentPage==="history") m.innerHTML=renderHistory();
+  else if(currentPage==="settings") m.innerHTML=renderSettings();
+  else if(currentPage==="profile") m.innerHTML=renderProfile();
+}
+function badge(s){return `<span class="badge b-${s.toLowerCase()}">${s}</span>`;}
+function nextLabel(status){const i=STATUS_ORDER.indexOf(status); return i<0||i>=3?null:"Mark "+STATUS_ORDER[i+1];}
+
+function renderDashboard(){
+  const pending=t=>ops.filter(o=>o.type===t&&o.status!=="Done"&&o.status!=="Canceled").length;
+  const lowItems=products.filter(isLow), outItems=products.filter(isOut);
+  let alert='';
+  if(lowItems.length||outItems.length){
+    alert=`<div class="alertbar">⚠ ${outItems.length} item(s) out of stock, ${lowItems.length} item(s) at or below reorder point: ${[...outItems,...lowItems].map(p=>p.name).join(', ')}</div>`;
+  }
+  const healthPct = products.length ? Math.round(((products.length-lowStockCount()-outStockCount())/products.length)*100) : 100;
+  return `
+  <div class="topbar"><h2>Dashboard</h2></div>
+  ${alert}
+  <div class="kpis">
+    <div class="kpi"><div class="num">${products.length}</div><div class="lbl">Total Products in Stock</div></div>
+    <div class="kpi ${lowStockCount()+outStockCount()>0?'warn':''}"><div class="num">${lowStockCount()+outStockCount()}</div><div class="lbl">Low / Out of Stock Items</div></div>
+    <div class="kpi"><div class="num">${pending("Receipt")}</div><div class="lbl">Pending Receipts</div></div>
+    <div class="kpi"><div class="num">${pending("Delivery")}</div><div class="lbl">Pending Deliveries</div></div>
+    <div class="kpi"><div class="num">${pending("Internal")}</div><div class="lbl">Internal Transfers Scheduled</div></div>
+  </div>
+  <div class="chartsgrid">
+    <div class="chartcard"><h4>Stock Movement Trend (Ledger)</h4><canvas id="chartTrend"></canvas></div>
+    <div class="chartcard"><h4>Stock by Warehouse</h4><canvas id="chartWh"></canvas></div>
+    <div class="chartcard gaugewrap"><h4 style="align-self:flex-start">Inventory Health</h4><canvas id="chartGauge" width="220" height="140"></canvas><div class="gaugeval">${healthPct}%</div><div class="gaugelbl">of products at healthy stock</div></div>
+  </div>
+  <div class="chartsgrid" style="grid-template-columns:1fr 1fr">
+    <div class="chartcard"><h4>Stock Split by Category</h4><canvas id="chartCat"></canvas></div>
+    <div class="chartcard"><h4>Top Products by Total Stock</h4><canvas id="chartTop"></canvas></div>
+  </div>
+  <div class="panel">
+    <h3>All Operations</h3>
+    <div class="filters">
+      <select onchange="applyFilters()" id="f_type"><option value="">Doc Type: All</option><option>Receipt</option><option>Delivery</option><option>Internal</option><option>Adjustment</option></select>
+      <select onchange="applyFilters()" id="f_status"><option value="">Status: All</option>${STATUS_ORDER.concat("Canceled").map(s=>`<option>${s}</option>`).join('')}</select>
+      <select onchange="applyFilters()" id="f_wh"><option value="">Warehouse: All</option>${warehouses.map(w=>`<option>${w}</option>`).join('')}</select>
+      <select onchange="applyFilters()" id="f_cat"><option value="">Category: All</option>${categories.map(c=>`<option>${c}</option>`).join('')}</select>
+    </div>
+    <div id="opsTableWrap">${opsTable(ops)}</div>
+  </div>`;
+}
+function opWh(o){return o.to||o.from||o.warehouse||'-';}
+function opsTable(list){
+  if(!list.length) return `<div class="emptytxt">No operations yet.</div>`;
+  return `<table><thead><tr><th>ID</th><th>Type</th><th>Product</th><th>Qty</th><th>Warehouse</th><th>Status</th><th>Date</th><th></th></tr></thead><tbody>
+  ${list.map(o=>{const p=findProduct(o.productId); const nl=nextLabel(o.status);return `<tr>
+    <td>#${o.id}</td><td>${o.type}</td><td>${p?p.name:'(deleted)'}</td><td>${o.qty}</td><td>${opWh(o)}</td><td>${badge(o.status)}</td><td>${o.date}</td>
+    <td>${nl?`<button class="small" onclick="advanceOp(${o.id})">${nl}</button>`:''}${o.status!=="Done"&&o.status!=="Canceled"?`<button class="small danger" onclick="cancelOp(${o.id})">Cancel</button>`:''}</td>
+  </tr>`;}).join('')}</tbody></table>`;
+}
+function applyFilters(){
+  const t=f_type.value,s=f_status.value,w=f_wh.value,c=f_cat.value;
+  const filtered=ops.filter(o=>{
+    const p=findProduct(o.productId);
+    return (!t||o.type===t)&&(!s||o.status===s)&&(!w||opWh(o)===w)&&(!c||(p&&p.category===c));
+  });
+  document.getElementById('opsTableWrap').innerHTML=opsTable(filtered);
+}
+
+function renderProducts(){
+  return `
+  <div class="topbar"><h2>Products</h2><input id="p_search" placeholder="Search by name or SKU..." style="max-width:240px;margin:0" oninput="filterProducts()"></div>
+  <div class="panel">
+    <h3>Add Product</h3>
+    <div class="formgrid">
+      <div><label>Name</label><input id="p_name"></div>
+      <div><label>SKU / Code</label><input id="p_sku"></div>
+      <div><label>Category</label><select id="p_cat">${categories.map(c=>`<option>${c}</option>`).join('')}</select></div>
+      <div><label>Unit of Measure</label><input id="p_uom" placeholder="pcs, kg..." value="pcs"></div>
+      <div><label>Initial Stock</label><input id="p_stock" type="number" value="0"></div>
+      <div><label>Warehouse</label><select id="p_wh">${warehouses.map(w=>`<option>${w}</option>`).join('')}</select></div>
+      <div><label>Reorder Point</label><input id="p_reorder" type="number" value="10"></div>
+    </div>
+    <button onclick="addProduct()">+ Create Product</button>
+  </div>
+  <div class="panel">
+    <h3>All Products</h3>
+    <div id="productsTableWrap">${productsTable(products)}</div>
+  </div>`;
+}
+function productsTable(list){
+  if(!list.length) return `<div class="emptytxt">No products found.</div>`;
+  return `<table><thead><tr><th>Name</th><th>SKU</th><th>Category</th><th>UOM</th><th>Stock by Warehouse</th><th>Total</th><th>Status</th><th></th></tr></thead><tbody>
+  ${list.map(p=>`<tr><td>${p.name}</td><td>${p.sku}</td><td>${p.category}</td><td>${p.uom}</td>
+    <td>${Object.entries(p.stockByWh).map(([w,q])=>`<span class="pill">${w}: ${q}</span>`).join('')}</td>
+    <td><b>${totalStock(p)}</b></td>
+    <td>${isOut(p)?badge('Canceled'):isLow(p)?badge('Waiting'):badge('Done')}</td>
+    <td><button class="small danger" onclick="deleteProduct(${p.id})">Delete</button></td></tr>`).join('')}
+  </tbody></table>`;
+}
+function filterProducts(){
+  const q=p_search.value.toLowerCase();
+  const filtered=products.filter(p=>p.name.toLowerCase().includes(q)||p.sku.toLowerCase().includes(q));
+  document.getElementById('productsTableWrap').innerHTML=productsTable(filtered);
+}
+function addProduct(){
+  if(!p_name.value||!p_sku.value){alert("Name and SKU required");return;}
+  const stockByWh={}; warehouses.forEach(w=>stockByWh[w]=0);
+  stockByWh[p_wh.value]=Number(p_stock.value)||0;
+  products.push({id:seq++,name:p_name.value,sku:p_sku.value,category:p_cat.value,uom:p_uom.value||'pcs',stockByWh,reorderPoint:Number(p_reorder.value)||10});
+  saveState(); render();
+}
+
+function renderOpsPage(type,title){
+  const list=ops.filter(o=>o.type===type);
+  let extraFields='';
+  if(type==="Receipt") extraFields=`<div><label>Supplier</label><input id="op_supplier" placeholder="Supplier name"></div>
+    <div><label>Into Warehouse</label><select id="op_wh">${warehouses.map(w=>`<option>${w}</option>`).join('')}</select></div>`;
+  if(type==="Delivery") extraFields=`<div><label>From Warehouse</label><select id="op_wh">${warehouses.map(w=>`<option>${w}</option>`).join('')}</select></div>`;
+  if(type==="Adjustment") extraFields=`<div><label>Warehouse</label><select id="op_wh">${warehouses.map(w=>`<option>${w}</option>`).join('')}</select></div>`;
+  if(type==="Internal") extraFields=`<div><label>From</label><select id="op_from">${warehouses.map(w=>`<option>${w}</option>`).join('')}</select></div>
+    <div><label>To</label><select id="op_to">${warehouses.map(w=>`<option>${w}</option>`).join('')}</select></div>`;
+  return `
+  <div class="topbar"><h2>${title}</h2></div>
+  <div class="panel">
+    <h3>New ${type}</h3>
+    <div class="formgrid">
+      <div><label>Product</label><select id="op_product">${products.map(p=>`<option value="${p.id}">${p.name} (${p.sku})</option>`).join('')}</select></div>
+      <div><label>${type==="Adjustment"?"Counted Quantity":"Quantity"}</label><input id="op_qty" type="number" value="1"></div>
+      ${extraFields}
+    </div>
+    <button onclick="submitOp('${type}')">+ Create ${type}</button>
+  </div>
+  <div class="panel"><h3>${title} List</h3>${opsTable(list)}</div>
+  <div class="panel"><p style="color:#6a76a0;font-size:12px">Workflow: Draft → Waiting → Ready → Done. Stock updates automatically once a document reaches <b>Done</b>. Any stage before Done can be Canceled.</p></div>`;
+}
+function submitOp(type){
+  if(!products.length){alert("Create a product first");return;}
+  const data={productId:Number(op_product.value),qty:Number(op_qty.value)||0};
+  if(type==="Receipt"){data.supplier=op_supplier.value||"Unknown"; data.warehouse=op_wh.value;}
+  if(type==="Delivery"||type==="Adjustment"){data.warehouse=op_wh.value;}
+  if(type==="Internal"){data.from=op_from.value; data.to=op_to.value;}
+  createOp(type,data);
+}
+
+function renderHistory(){
+  return `
+  <div class="topbar"><h2>Move History (Stock Ledger)</h2></div>
+  <div class="panel">
+  ${ledger.length? `<table><thead><tr><th>Date</th><th>Type</th><th>Product</th><th>Qty Change</th><th>Detail</th></tr></thead><tbody>
+    ${ledger.map(l=>`<tr><td>${l.date}</td><td>${l.type}</td><td>${l.product}</td><td>${l.qty}</td><td>${l.detail}</td></tr>`).join('')}
+  </tbody></table>` : `<div class="emptytxt">No stock movements logged yet.</div>`}
+  </div>`;
+}
+
+function renderSettings(){
+  return `
+  <div class="topbar"><h2>Settings</h2></div>
+  <div class="panel">
+    <h3>Warehouses</h3>
+    <div class="formgrid"><div><label>New Warehouse Name</label><input id="wh_name"></div></div>
+    <button onclick="addWarehouse()">+ Add Warehouse</button>
+    <table style="margin-top:14px"><thead><tr><th>Warehouse</th></tr></thead><tbody>
+    ${warehouses.map(w=>`<tr><td>${w}</td></tr>`).join('')}
+    </tbody></table>
+  </div>
+  <div class="panel">
+    <h3>Categories</h3>
+    <div class="formgrid"><div><label>New Category Name</label><input id="cat_name"></div></div>
+    <button onclick="addCategory()">+ Add Category</button>
+    <table style="margin-top:14px"><thead><tr><th>Category</th></tr></thead><tbody>
+    ${categories.map(c=>`<tr><td>${c}</td></tr>`).join('')}
+    </tbody></table>
+  </div>`;
+}
+function addWarehouse(){if(!wh_name.value)return; warehouses.push(wh_name.value); products.forEach(p=>ensureWh(p,wh_name.value)); saveState(); render();}
+function addCategory(){if(!cat_name.value)return; categories.push(cat_name.value); saveState(); render();}
+
+function renderProfile(){
+  return `
+  <div class="topbar"><h2>My Profile</h2></div>
+  <div class="panel">
+    <p style="color:#aab4d4;line-height:1.7">Login ID: <b>demo_user</b><br>Role: Inventory Manager<br>Warehouse access: All (${warehouses.length})</p>
+    <button class="secondary" style="margin-top:14px" onclick="logout()">Logout</button>
+  </div>`;
+}
+</script>
+</body>
+</html>
