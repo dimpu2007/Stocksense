@@ -14,10 +14,5 @@ A pastel blue and black themed inventory management system built with Flask and 
 - Username: admin
 - Password: admin123
 
-## Run locally
-1. Open a terminal in the project folder.
-2. Install dependencies:
-   python -m pip install -r requirements.txt
-3. Start the app:
-   python app.py
-4. Open http://127.0.0.1:5000/login
+## Run as a website
+https://stockvue.onrender.com
